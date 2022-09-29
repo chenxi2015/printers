@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Windows printing.
+// Package printer Windows printing.
 package printer
 
 import (
@@ -14,12 +14,40 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-//go:generate go run mksyscall_windows.go -output zapi.go printer.go
+//go:generate go run cmd/mksyscall/mksyscall_windows.go -output zapi.go printer.go
 
 type DOC_INFO_1 struct {
 	DocName    *uint16
 	OutputFile *uint16
 	Datatype   *uint16
+}
+
+type PRINTER_INFO_2 struct {
+	pServerName         *uint16
+	pPrinterName        *uint16
+	pShareName          *uint16
+	pPortName           *uint16
+	pDriverName         *uint16
+	pComment            *uint16
+	pLocation           *uint16
+	pDevMode            *DevMode
+	pSepFile            *uint16
+	pPrintProcessor     *uint16
+	pDatatype           *uint16
+	pParameters         *uint16
+	pSecurityDescriptor uintptr
+	attributes          uint32
+	priority            uint32
+	defaultPriority     uint32
+	startTime           uint32
+	untilTime           uint32
+	status              uint32
+	cJobs               uint32
+	averagePPM          uint32
+}
+
+func (pi *PRINTER_INFO_2) GetDataType() string {
+	return utf16PtrToString(pi.pDatatype)
 }
 
 type PRINTER_INFO_5 struct {
@@ -101,8 +129,8 @@ const (
 
 //sys	GetDefaultPrinter(buf *uint16, bufN *uint32) (err error) = winspool.GetDefaultPrinterW
 //sys	ClosePrinter(h syscall.Handle) (err error) = winspool.ClosePrinter
-//sys	OpenPrinter(name *uint16, h *syscall.Handle, defaults uintptr) (err error) = winspool.OpenPrinterW
-//sys	StartDocPrinter(h syscall.Handle, level uint32, docinfo *DOC_INFO_1) (err error) = winspool.StartDocPrinterW
+//sys	OpenPrinter(name *uint16, h *syscall.Handle, defaults int) (err error) = winspool.OpenPrinterW
+//sys	StartDocPrinter(h syscall.Handle, level uint32, docInfo *DOC_INFO_1) (err error) = winspool.StartDocPrinterW
 //sys	EndDocPrinter(h syscall.Handle) (err error) = winspool.EndDocPrinter
 //sys	WritePrinter(h syscall.Handle, buf *byte, bufN uint32, written *uint32) (err error) = winspool.WritePrinter
 //sys	StartPagePrinter(h syscall.Handle) (err error) = winspool.StartPagePrinter
@@ -110,6 +138,9 @@ const (
 //sys	EnumPrinters(flags uint32, name *uint16, level uint32, buf *byte, bufN uint32, needed *uint32, returned *uint32) (err error) = winspool.EnumPrintersW
 //sys	GetPrinterDriver(h syscall.Handle, env *uint16, level uint32, di *byte, n uint32, needed *uint32) (err error) = winspool.GetPrinterDriverW
 //sys	EnumJobs(h syscall.Handle, firstJob uint32, noJobs uint32, level uint32, buf *byte, bufN uint32, bytesNeeded *uint32, jobsReturned *uint32) (err error) = winspool.EnumJobsW
+//sys	DocumentProperties(hWnd uint32, h syscall.Handle, pDeviceName *uint16, devModeOut *DevMode, devModeIn *DevMode, fMode uint32) (err error) = winspool.DocumentPropertiesW
+//sys	GetPrinter(h syscall.Handle, level uint32, buf *byte, bufN uint32, needed *uint32) (err error) = winspool.GetPrinterW
+//sys	SetPrinter(h syscall.Handle, level uint32, buf *byte, command uint32) (err error) = winspool.SetPrinterW
 
 func Default() (string, error) {
 	b := make([]uint16, 3)
@@ -159,7 +190,8 @@ type Printer struct {
 func Open(name string) (*Printer, error) {
 	var p Printer
 	// TODO: implement pDefault parameter
-	err := OpenPrinter(&(syscall.StringToUTF16(name))[0], &p.h, 0)
+	docName, _ := syscall.UTF16FromString(name)
+	err := OpenPrinter(&(docName)[0], &p.h, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -328,17 +360,105 @@ func (p *Printer) DriverInfo() (*DriverInfo, error) {
 	}, nil
 }
 
+// GetPrinter2 get Printer Info 2
+func (p *Printer) GetPrinter2() (printerInfo *PRINTER_INFO_2, err error) {
+	var needed uint32
+	var buf = make([]byte, 1)
+
+	var r1 uintptr
+	r1, _, err = procGetPrinterW.Call(uintptr(p.h), 2, uintptr(unsafe.Pointer(&buf[0])), uintptr(len(buf)), uintptr(unsafe.Pointer(&needed)))
+	if r1 == 0 {
+		var newBuf = make([]byte, int(needed))
+		var newLen = uintptr(len(newBuf))
+		r1, _, err = procGetPrinterW.Call(uintptr(p.h), 2, uintptr(unsafe.Pointer(&newBuf[0])), newLen, uintptr(unsafe.Pointer(&needed)))
+		if r1 == 0 {
+			//fmt.Println("Failed")
+			return
+		}
+		printerInfo = (*PRINTER_INFO_2)(unsafe.Pointer(&newBuf[0]))
+		//fmt.Println("Get Printer Info 2 Duplex Setting: ", printerInfo.pDevMode.dmDuplex)
+	}
+	return
+}
+
+func (p *Printer) SetPrinter(printerInfo *PRINTER_INFO_2) (err error) {
+	// var bin_buf bytes.Buffer
+	// binary.Write(&bin_buf, binary.BigEndian, printerInfo)
+	// bs := bin_buf.Bytes()
+	bs := (*[unsafe.Sizeof(printerInfo)]byte)(unsafe.Pointer(&printerInfo))
+
+	var r1 uintptr
+	r1, _, err = procSetPrinterW.Call(uintptr(p.h), 2, uintptr(unsafe.Pointer(&bs[0])), 0)
+	if r1 != 0 {
+		return
+	}
+	//fmt.Println("Set printer to duplex with the info...")
+	return
+}
+
+func (p *Printer) DocumentPropertiesGet(deviceName string) (devMode *DevMode, err error) {
+	pDeviceName, err := syscall.UTF16PtrFromString(deviceName)
+	if err != nil {
+		return
+	}
+
+	var r1 uintptr
+	r1, _, err = procDocumentPropertiesW.Call(0, uintptr(p.h), uintptr(unsafe.Pointer(pDeviceName)), 0, 0, 0)
+	cbBuf := int32(r1)
+	if cbBuf < 0 {
+		return
+	}
+
+	var pDevMode = make([]byte, cbBuf)
+	devMode = (*DevMode)(unsafe.Pointer(&pDevMode[0]))
+	devMode.dmSize = uint16(cbBuf)
+	devMode.dmSpecVersion = DM_SPECVERSION
+
+	r1, _, err = procDocumentPropertiesW.Call(0, uintptr(p.h), uintptr(unsafe.Pointer(pDeviceName)), uintptr(unsafe.Pointer(devMode)), uintptr(unsafe.Pointer(devMode)), uintptr(DM_COPY))
+	if int32(r1) < 0 {
+		return
+	}
+	//fmt.Println("From get:", devMode.dmDuplex)
+	return
+}
+
+func (p *Printer) DocumentPropertiesSet(deviceName string, devMode *DevMode) (err error) {
+	var pDeviceName *uint16
+	pDeviceName, err = syscall.UTF16PtrFromString(deviceName)
+	if err != nil {
+		return
+	}
+
+	var r1 uintptr
+	r1, _, err = procDocumentPropertiesW.Call(0, uintptr(p.h), uintptr(unsafe.Pointer(pDeviceName)), uintptr(unsafe.Pointer(devMode)), uintptr(unsafe.Pointer(devMode)), uintptr(DM_MODIFY))
+	if int32(r1) < 0 {
+		return
+	}
+	return
+}
+
+func (p *Printer) GetDataType() (dataType string, err error) {
+	var ptr2 *PRINTER_INFO_2
+	if ptr2, err = p.GetPrinter2(); err != nil {
+		return
+	}
+	dataType = ptr2.GetDataType()
+	return
+}
+
 func (p *Printer) StartDocument(name, datatype string) error {
+	docName, _ := syscall.UTF16FromString(name)
+	dataType, _ := syscall.UTF16FromString(datatype)
 	d := DOC_INFO_1{
-		DocName:    &(syscall.StringToUTF16(name))[0],
+		DocName:    &(docName)[0],
 		OutputFile: nil,
-		Datatype:   &(syscall.StringToUTF16(datatype))[0],
+		Datatype:   &(dataType)[0],
 	}
 	return StartDocPrinter(p.h, 1, &d)
 }
 
 // StartRawDocument calls StartDocument and passes either "RAW" or "XPS_PASS"
-// as a document type, depending if printer driver is XPS-based or not.
+// as a document type, depending on if printer driver is XPS-based or not.
 func (p *Printer) StartRawDocument(name string) error {
 	di, err := p.DriverInfo()
 	if err != nil {

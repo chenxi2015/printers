@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build windows
 // +build windows
 
 // print command prints text documents to selected printer.
@@ -15,7 +16,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/alexbrainman/printer"
+	"github.com/godoes/printer"
 )
 
 var (
@@ -75,13 +76,17 @@ func printOneDocument(printerName, documentName string, lines []string) error {
 	if err != nil {
 		return err
 	}
-	defer p.Close()
+	defer func(p *printer.Printer) {
+		_ = p.Close()
+	}(p)
 
 	err = p.StartRawDocument(documentName)
 	if err != nil {
 		return err
 	}
-	defer p.EndDocument()
+	defer func(p *printer.Printer) {
+		_ = p.EndDocument()
+	}(p)
 
 	err = p.StartPage()
 	if err != nil {
@@ -89,7 +94,7 @@ func printOneDocument(printerName, documentName string, lines []string) error {
 	}
 
 	for _, line := range lines {
-		fmt.Fprintf(p, "%s\r\n", line)
+		_, _ = fmt.Fprintf(p, "%s\r\n", line)
 	}
 
 	return p.EndPage()
@@ -121,18 +126,18 @@ func printDocument(path string) error {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr)
-	fmt.Fprintf(os.Stderr, "usage: print [-n=<copies>] [-p=<printer>] <file-path-to-print>\n")
-	fmt.Fprintf(os.Stderr, "       or\n")
-	fmt.Fprintf(os.Stderr, "       print -l\n")
-	fmt.Fprintln(os.Stderr)
+	_, _ = fmt.Fprintln(os.Stderr)
+	_, _ = fmt.Fprintf(os.Stderr, "usage: print [-n=<copies>] [-p=<printer>] <file-path-to-print>\n")
+	_, _ = fmt.Fprintf(os.Stderr, "       or\n")
+	_, _ = fmt.Fprintf(os.Stderr, "       print -l\n")
+	_, _ = fmt.Fprintln(os.Stderr)
 	flag.PrintDefaults()
 	os.Exit(1)
 }
 
 func exit(err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
 	os.Exit(0)
@@ -146,11 +151,11 @@ func main() {
 	}
 	switch len(flag.Args()) {
 	case 0:
-		fmt.Fprintf(os.Stderr, "no document path to print provided\n")
+		_, _ = fmt.Fprintf(os.Stderr, "no document path to print provided\n")
 	case 1:
 		exit(printDocument(flag.Arg(0)))
 	default:
-		fmt.Fprintf(os.Stderr, "too many parameters provided\n")
+		_, _ = fmt.Fprintf(os.Stderr, "too many parameters provided\n")
 	}
 	usage()
 }
