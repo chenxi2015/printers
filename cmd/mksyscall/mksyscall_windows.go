@@ -15,29 +15,31 @@ to standard output.
 The prototypes are marked by lines beginning with "//sys" and read
 like func declarations if //sys is replaced by func, but:
 
-* The parameter lists must give a name for each argument. This
-  includes return parameters.
+  - The parameter lists must give a name for each argument. This
+    includes return parameters.
 
-* The parameter lists must give a type for each argument:
-  the (x, y, z int) shorthand is not allowed.
+  - The parameter lists must give a type for each argument:
+    the (x, y, z int) shorthand is not allowed.
 
 * If the return parameter is an error number, it must be named err.
 
-* If GO func name needs to be different from it's winapi dll name,
-  the winapi name could be specified at the end, after "=" sign, like
-  //sys LoadLibrary(libname string) (handle uint32, err error) = LoadLibraryA
+  - If GO func name needs to be different from it's winapi dll name,
+    the winapi name could be specified at the end, after "=" sign, like
+    //sys LoadLibrary(libname string) (handle uint32, err error) = LoadLibraryA
 
-* Each function that returns err needs to supply a condition, that
-  return value of winapi will be tested against to detect failure.
-  This would set err to windows "last-error", otherwise it will be nil.
-  The value can be provided at end of //sys declaration, like
-  //sys LoadLibrary(libname string) (handle uint32, err error) [failretval==-1] = LoadLibraryA
-  and is [failretval==0] by default.
+  - Each function that returns err needs to supply a condition, that
+    return value of winapi will be tested against to detect failure.
+    This would set err to windows "last-error", otherwise it will be nil.
+    The value can be provided at end of //sys declaration, like
+    //sys LoadLibrary(libname string) (handle uint32, err error) [failretval==-1] = LoadLibraryA
+    and is [failretval==0] by default.
 
 Usage:
+
 	mksyscall_windows [flags] [path ...]
 
 The flags are:
+
 	-output
 		Specify output file name (outputs to console if blank).
 	-trace
@@ -55,10 +57,8 @@ import (
 	"go/parser"
 	"go/token"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 	"text/template"
 )
@@ -126,22 +126,22 @@ func (p *Param) SliceTmpVarCode() string {
 
 // StringTmpVarCode returns source code for string temp variable.
 func (p *Param) StringTmpVarCode() string {
-	errvar := p.fn.Rets.ErrorVarName()
-	if errvar == "" {
-		errvar = "_"
+	errStr := p.fn.Rets.ErrorVarName()
+	if errStr == "" {
+		errStr = "_"
 	}
 	tmp := p.tmpVar()
 	const code = `var %s %s
 	%s, %s = %s(%s)`
-	s := fmt.Sprintf(code, tmp, p.fn.StrconvType(), tmp, errvar, p.fn.StrconvFunc(), p.Name)
-	if errvar == "-" {
+	s := fmt.Sprintf(code, tmp, p.fn.StrconvType(), tmp, errStr, p.fn.StrconvFunc(), p.Name)
+	if errStr == "-" {
 		return s
 	}
-	const morecode = `
+	const moreCode = `
 	if %s != nil {
 		return
 	}`
-	return s + fmt.Sprintf(morecode, errvar)
+	return s + fmt.Sprintf(moreCode, errStr)
 }
 
 // TmpVarCode returns source code for temp variable.
@@ -264,18 +264,18 @@ func (r *Rets) SetReturnValuesCode() string {
 	if r.Name == "" && !r.ReturnsError {
 		return ""
 	}
-	retvar := "r0"
+	retVal := "r0"
 	if r.Name == "" {
-		retvar = "r1"
+		retVal = "r1"
 	}
-	errvar := "_"
+	errStr := "_"
 	if r.ReturnsError {
-		errvar = "e1"
+		errStr = "e1"
 	}
-	return fmt.Sprintf("%s, _, %s := ", retvar, errvar)
+	return fmt.Sprintf("%s, _, %s := ", retVal, errStr)
 }
 
-func (r *Rets) useLongHandleErrorCode(retvar string) string {
+func (r *Rets) useLongHandleErrorCode(inStr string) string {
 	const code = `if %s {
 		if e1 != 0 {
 			err = error(e1)
@@ -283,9 +283,9 @@ func (r *Rets) useLongHandleErrorCode(retvar string) string {
 			err = %sEINVAL
 		}
 	}`
-	cond := retvar + " == 0"
+	cond := inStr + " == 0"
 	if r.FailCond != "" {
-		cond = strings.Replace(r.FailCond, "failretval", retvar, 1)
+		cond = strings.Replace(r.FailCond, "failretval", inStr, 1)
 	}
 	return fmt.Sprintf(code, cond, syscallDot())
 }
@@ -325,8 +325,8 @@ type Fn struct {
 	Params      []*Param
 	Rets        *Rets
 	PrintTrace  bool
-	dllname     string
-	dllfuncname string
+	dllName     string
+	dllFuncName string
 	src         string
 	// TODO: get rid of this field and just use parameter index instead
 	curTmpVarIdx int // insure tmp variables have uniq names
@@ -445,10 +445,10 @@ func newFn(s string) (*Fn, error) {
 	a := strings.Split(s, ".")
 	switch len(a) {
 	case 1:
-		f.dllfuncname = a[0]
+		f.dllFuncName = a[0]
 	case 2:
-		f.dllname = a[0]
-		f.dllfuncname = a[1]
+		f.dllName = a[0]
+		f.dllFuncName = a[1]
 	default:
 		return nil, errors.New("Could not extract dll name from \"" + f.src + "\"")
 	}
@@ -457,18 +457,18 @@ func newFn(s string) (*Fn, error) {
 
 // DLLName returns DLL name for function f.
 func (f *Fn) DLLName() string {
-	if f.dllname == "" {
+	if f.dllName == "" {
 		return "kernel32"
 	}
-	return f.dllname
+	return f.dllName
 }
 
 // DLLFuncName returns DLL function name for function f.
 func (f *Fn) DLLFuncName() string {
-	if f.dllfuncname == "" {
+	if f.dllFuncName == "" {
 		return f.Name
 	}
-	return f.dllfuncname
+	return f.dllFuncName
 }
 
 // ParamList returns source code for function f parameters.
@@ -518,11 +518,11 @@ func (f *Fn) SyscallParamCount() int {
 
 // Syscall determines which SyscallX function to use for function f.
 func (f *Fn) Syscall() string {
-	c := f.SyscallParamCount()
-	if c == 3 {
-		return syscallDot() + "Syscall"
-	}
-	return syscallDot() + "Syscall" + strconv.Itoa(c)
+	//c := f.SyscallParamCount()
+	//if c == 3 {
+	//	return syscallDot() + "Syscall"
+	//}
+	return syscallDot() + "SyscallN"
 }
 
 // SyscallParamList returns source code for SyscallX parameters for function f.
@@ -594,8 +594,8 @@ func (f *Fn) HelperName() string {
 
 // Source files and functions.
 type Source struct {
-	Funcs []*Fn
-	Files []string
+	Functions []*Fn
+	Files     []string
 }
 
 // ParseFiles parses files listed in fs and extracts all syscall
@@ -603,8 +603,8 @@ type Source struct {
 // and functions collection *Source if successful.
 func ParseFiles(fs []string) (*Source, error) {
 	src := &Source{
-		Funcs: make([]*Fn, 0),
-		Files: make([]string, 0),
+		Functions: make([]*Fn, 0),
+		Files:     make([]string, 0),
 	}
 	for _, file := range fs {
 		if err := src.ParseFile(file); err != nil {
@@ -618,7 +618,7 @@ func ParseFiles(fs []string) (*Source, error) {
 func (src *Source) DLLs() []string {
 	uniq := make(map[string]bool)
 	r := make([]string, 0)
-	for _, f := range src.Funcs {
+	for _, f := range src.Functions {
 		name := f.DLLName()
 		if _, found := uniq[name]; !found {
 			uniq[name] = true
@@ -628,7 +628,7 @@ func (src *Source) DLLs() []string {
 	return r
 }
 
-// ParseFile adds adition file path to a source set src.
+// ParseFile adds addition file path to a source set src.
 func (src *Source) ParseFile(path string) error {
 	file, err := os.Open(path)
 	if err != nil {
@@ -655,7 +655,7 @@ func (src *Source) ParseFile(path string) error {
 		if err != nil {
 			return err
 		}
-		src.Funcs = append(src.Funcs, f)
+		src.Functions = append(src.Functions, f)
 	}
 	if err := s.Err(); err != nil {
 		return err
@@ -663,12 +663,12 @@ func (src *Source) ParseFile(path string) error {
 	src.Files = append(src.Files, path)
 
 	// get package name
-	fset := token.NewFileSet()
+	fileSet := token.NewFileSet()
 	_, err = file.Seek(0, 0)
 	if err != nil {
 		return err
 	}
-	pkg, err := parser.ParseFile(fset, "", file, parser.PackageClauseOnly)
+	pkg, err := parser.ParseFile(fileSet, "", file, parser.PackageClauseOnly)
 	if err != nil {
 		return err
 	}
@@ -722,7 +722,7 @@ func main() {
 	if *filename == "" {
 		_, err = os.Stdout.Write(data)
 	} else {
-		err = ioutil.WriteFile(*filename, data, 0644)
+		err = os.WriteFile(*filename, data, 0644)
 	}
 	if err != nil {
 		log.Fatal(err)
@@ -745,8 +745,8 @@ var _ unsafe.Pointer
 
 var (
 {{template "dlls" .}}
-{{template "funcnames" .}})
-{{range .Funcs}}{{if .HasStringParam}}{{template "helperbody" .}}{{end}}{{template "funcbody" .}}{{end}}
+{{template "funcNames" .}})
+{{range .Functions}}{{if .HasStringParam}}{{template "helperBody" .}}{{end}}{{template "funcBody" .}}{{end}}
 {{end}}
 
 {{/* help functions */}}
@@ -754,36 +754,36 @@ var (
 {{define "dlls"}}{{range .DLLs}}	{{.}}Mod = {{syscallDot}}NewLazyDLL("{{.}}.drv")
 {{end}}{{end}}
 
-{{define "funcnames"}}{{range .Funcs}}	proc{{.DLLFuncName}} = {{.DLLName}}Mod.NewProc("{{.DLLFuncName}}")
+{{define "funcNames"}}{{range .Functions}}	proc{{.DLLFuncName}} = {{.DLLName}}Mod.NewProc("{{.DLLFuncName}}")
 {{end}}{{end}}
 
-{{define "helperbody"}}
+{{define "helperBody"}}
 func {{.Name}}({{.ParamList}}) {{template "results" .}}{
-{{template "helpertmpvars" .}}	return {{.HelperName}}({{.HelperCallParamList}})
+{{template "helperTmpVars" .}}	return {{.HelperName}}({{.HelperCallParamList}})
 }
 {{end}}
 
-{{define "funcbody"}}
+{{define "funcBody"}}
 func {{.HelperName}}({{.HelperParamList}}) {{template "results" .}}{
-{{template "tmpvars" .}}	{{template "syscall" .}}
-{{template "seterror" .}}{{template "printtrace" .}}	return
+{{template "tmpVars" .}}	{{template "syscall" .}}
+{{template "setError" .}}{{template "printTrace" .}}	return
 }
 {{end}}
 
-{{define "helpertmpvars"}}{{range .Params}}{{if .TmpVarHelperCode}}	{{.TmpVarHelperCode}}
+{{define "helperTmpVars"}}{{range .Params}}{{if .TmpVarHelperCode}}	{{.TmpVarHelperCode}}
 {{end}}{{end}}{{end}}
 
-{{define "tmpvars"}}{{range .Params}}{{if .TmpVarCode}}	{{.TmpVarCode}}
+{{define "tmpVars"}}{{range .Params}}{{if .TmpVarCode}}	{{.TmpVarCode}}
 {{end}}{{end}}{{end}}
 
 {{define "results"}}{{if .Rets.List}}{{.Rets.List}} {{end}}{{end}}
 
-{{define "syscall"}}{{.Rets.SetReturnValuesCode}}{{.Syscall}}(proc{{.DLLFuncName}}.Addr(), {{.ParamCount}}, {{.SyscallParamList}}){{end}}
+{{define "syscall"}}{{.Rets.SetReturnValuesCode}}{{.Syscall}}(proc{{.DLLFuncName}}.Addr(), {{.SyscallParamList}}){{end}}
 
-{{define "seterror"}}{{if .Rets.SetErrorCode}}	{{.Rets.SetErrorCode}}
+{{define "setError"}}{{if .Rets.SetErrorCode}}	{{.Rets.SetErrorCode}}
 {{end}}{{end}}
 
-{{define "printtrace"}}{{if .PrintTrace}}	print("SYSCALL: {{.Name}}(", {{.ParamPrintList}}") (", {{.Rets.PrintList}}")\n")
+{{define "printTrace"}}{{if .PrintTrace}}	print("SYSCALL: {{.Name}}(", {{.ParamPrintList}}") (", {{.Rets.PrintList}}")\n")
 {{end}}{{end}}
 
 `

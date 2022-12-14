@@ -1,4 +1,4 @@
-package printer
+package printers
 
 import (
 	"fmt"
@@ -8,6 +8,7 @@ import (
 	"unsafe"
 )
 
+//goland:noinspection GoSnakeCaseUsage,GoUnusedConst,SpellCheckingInspection
 const (
 	CCHDEVICENAME = 32
 	CCHFORMNAME   = 32
@@ -65,6 +66,8 @@ const (
 )
 
 // DevMode struct.
+//
+//goland:noinspection SpellCheckingInspection
 type DevMode struct {
 	// WCHAR dmDeviceName[CCHDEVICENAME]
 	dmDeviceName, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ uint16

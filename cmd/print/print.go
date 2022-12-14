@@ -11,12 +11,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/godoes/printer"
+	"github.com/godoes/printers"
 )
 
 var (
@@ -26,7 +25,7 @@ var (
 )
 
 func findDefaultPrinter() string {
-	p, err := printer.Default()
+	p, err := printers.GetDefault()
 	if err != nil {
 		return ""
 	}
@@ -34,15 +33,15 @@ func findDefaultPrinter() string {
 }
 
 func listPrinters() error {
-	printers, err := printer.ReadNames()
+	printerNames, err := printers.ReadNames()
 	if err != nil {
 		return err
 	}
-	defaultPrinter, err := printer.Default()
+	defaultPrinter, err := printers.GetDefault()
 	if err != nil {
 		return err
 	}
-	for i, p := range printers {
+	for i, p := range printerNames {
 		s := " "
 		if p == defaultPrinter {
 			s = "*"
@@ -58,25 +57,25 @@ func selectPrinter() (string, error) {
 		// must be a printer name
 		return *printerId, nil
 	}
-	printers, err := printer.ReadNames()
+	printerNames, err := printers.ReadNames()
 	if err != nil {
 		return "", err
 	}
 	if n < 0 {
 		return "", fmt.Errorf("printer index (%d) cannot be negative", n)
 	}
-	if n >= len(printers) {
-		return "", fmt.Errorf("printer index (%d) is too large, there are only %d printers", n, len(printers))
+	if n >= len(printerNames) {
+		return "", fmt.Errorf("printer index (%d) is too large, there are only %d printers", n, len(printerNames))
 	}
-	return printers[n], nil
+	return printerNames[n], nil
 }
 
 func printOneDocument(printerName, documentName string, lines []string) error {
-	p, err := printer.Open(printerName)
+	p, err := printers.Open(printerName)
 	if err != nil {
 		return err
 	}
-	defer func(p *printer.Printer) {
+	defer func(p *printers.Printer) {
 		_ = p.Close()
 	}(p)
 
@@ -84,7 +83,7 @@ func printOneDocument(printerName, documentName string, lines []string) error {
 	if err != nil {
 		return err
 	}
-	defer func(p *printer.Printer) {
+	defer func(p *printers.Printer) {
 		_ = p.EndDocument()
 	}(p)
 
@@ -105,7 +104,7 @@ func printDocument(path string) error {
 		return fmt.Errorf("number of copies to print (%d) cannot be negative", *copies)
 	}
 
-	output, err := ioutil.ReadFile(path)
+	output, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
