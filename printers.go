@@ -380,7 +380,8 @@ type FormInfo struct {
 	ImageableArea Rect
 }
 
-func (p *Printer) EnumForms() (forms []FormInfo, err error) {
+// Forms returns information about all paper size forms on the print server
+func (p *Printer) Forms() (forms []FormInfo, err error) {
 	var bytesNeeded, formsReturned uint32
 	buf := make([]byte, 1)
 	for {

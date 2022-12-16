@@ -145,23 +145,27 @@ func TestSetDefault(t *testing.T) {
 	}
 }
 
-func TestPrinter_EnumForms(t *testing.T) {
-	p, err := Open("Microsoft Print To PDF")
-	if err != nil {
-		t.Errorf("Open got error: %v", err)
-		return
-	}
+func TestPrinter_Forms(t *testing.T) {
 	tests := []struct {
 		name    string
+		printer string
 		wantErr bool
 	}{
-		{"PrintForms", false},
+		{"Fax", "Fax", false},
+		{"PDF", "Microsoft Print To PDF", false},
+		{"XPS", "Microsoft XPS Document Writer", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotForms, err := p.EnumForms()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("EnumForms() error = %v, wantErr %v", err, tt.wantErr)
+			p, err := Open(tt.printer)
+			if err != nil {
+				t.Errorf("Open got error: %v", err)
+				return
+			}
+
+			var gotForms []FormInfo
+			if gotForms, err = p.Forms(); (err != nil) != tt.wantErr {
+				t.Errorf("Forms() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			for i, form := range gotForms {
