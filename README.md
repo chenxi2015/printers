@@ -57,6 +57,6 @@ func main() {
 
 Forked from [alexbrainman/printer](https://github.com/alexbrainman/printer).
 
-📃 LICENSE
+## 📃 LICENSE
 
 [BSD-3-Clause](./LICENSE)
