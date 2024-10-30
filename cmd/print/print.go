@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/chenxi2015/printers"
+	"github.com/chenxi2015/winprinters"
 )
 
 var (

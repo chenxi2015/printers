@@ -4,20 +4,20 @@ Call Windows operating system printer in Golang.
 
 ## ✨ Features
 
-See <http://godoc.org/github.com/chenxi2015/printers> for details.
+See <http://godoc.org/github.com/chenxi2015/winprinters> for details.
 
-- [AddCustomPaperSize](https://pkg.go.dev/github.com/chenxi2015/printers#AddCustomPaperSize): add a custom paper specification to the print server;
-- [Printer.Forms](https://pkg.go.dev/github.com/chenxi2015/printers#Printer.Forms): get all paper size forms on the print server;
-- [Printer.Jobs](https://pkg.go.dev/github.com/chenxi2015/printers#Printer.Jobs): get all print job information on a printer;
-- [ReadNames](https://pkg.go.dev/github.com/chenxi2015/printers#ReadNames): get printer names on the system;
-- [SetDefault](https://pkg.go.dev/github.com/chenxi2015/printers#SetDefault): set default printer for the system;
-- [GetDefault](https://pkg.go.dev/github.com/chenxi2015/printers#GetDefault): get default printer name on the system;
+- [AddCustomPaperSize](https://pkg.go.dev/github.com/chenxi2015/winprinters#AddCustomPaperSize): add a custom paper specification to the print server;
+- [Printer.Forms](https://pkg.go.dev/github.com/chenxi2015/winprinters#Printer.Forms): get all paper size forms on the print server;
+- [Printer.Jobs](https://pkg.go.dev/github.com/chenxi2015/winprinters#Printer.Jobs): get all print job information on a printer;
+- [ReadNames](https://pkg.go.dev/github.com/chenxi2015/winprinters#ReadNames): get printer names on the system;
+- [SetDefault](https://pkg.go.dev/github.com/chenxi2015/winprinters#SetDefault): set default printer for the system;
+- [GetDefault](https://pkg.go.dev/github.com/chenxi2015/winprinters#GetDefault): get default printer name on the system;
 - ...
 
 ## 🔰 Installation
 
 ```shell
-go get -d github.com/chenxi2015/printers
+go get -d github.com/chenxi2015/winprinters
 ```
 
 📝 Usage
@@ -28,16 +28,16 @@ package main
 import (
     "log"
 
-    "github.com/chenxi2015/printers"
+    "github.com/chenxi2015/winprinters"
 )
 
 func main() {
-    name, err := printers.GetDefault()
+    name, err := winprinters.GetDefault()
     if err != nil {
         log.Fatalln("GetDefault error:", err)
     }
 
-    printer, err := printers.Open(name)
+    printer, err := winprinters.Open(name)
     if err != nil {
         log.Fatalln("Open error:", err)
     }
@@ -55,7 +55,7 @@ func main() {
 
 ---
 
-Forked from [alexbrainman/printer](https://github.com/alexbrainman/printer).
+Forked from [godoes/printers](https://github.com/godoes/printers).
 
 ## 📃 LICENSE
 

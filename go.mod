@@ -1,4 +1,4 @@
-module github.com/chenxi2015/printers
+module github.com/chenxi2015/winprinters
 
 go 1.17
 
