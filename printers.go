@@ -3,7 +3,7 @@
 // license that can be found in the LICENSE file.
 
 // Package printers Windows printing.
-package printers
+package winprinters
 
 import (
 	"strings"

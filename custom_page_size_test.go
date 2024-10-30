@@ -1,5 +1,5 @@
 // Package printers
-package printers
+package winprinters
 
 import "testing"
 

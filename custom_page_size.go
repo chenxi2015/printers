@@ -1,4 +1,4 @@
-package printers
+package winprinters
 
 import (
 	"errors"
