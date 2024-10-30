@@ -1,4 +1,4 @@
-module github.com/godoes/printers
+module github.com/chenxi2015/printers
 
 go 1.17
 
