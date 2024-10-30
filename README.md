@@ -4,7 +4,7 @@ Call Windows operating system printer in Golang.
 
 ## ✨ Features
 
-See <http://godoc.org/github.com/godoes/printers> for details.
+See <http://godoc.org/github.com/chenxi2015/printers> for details.
 
 - [AddCustomPaperSize](https://pkg.go.dev/github.com/godoes/printers#AddCustomPaperSize): add a custom paper specification to the print server;
 - [Printer.Forms](https://pkg.go.dev/github.com/godoes/printers#Printer.Forms): get all paper size forms on the print server;
@@ -28,7 +28,7 @@ package main
 import (
     "log"
 
-    "github.com/godoes/printers"
+    "github.com/chenxi2015/printers"
 )
 
 func main() {
