@@ -17,7 +17,7 @@ See <http://godoc.org/github.com/godoes/printers> for details.
 ## 🔰 Installation
 
 ```shell
-go get -d github.com/godoes/printers
+go get -d github.com/chenxi2015/printers
 ```
 
 📝 Usage
