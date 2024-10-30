@@ -34,6 +34,7 @@ import (
 //sys	AddForm(h syscall.Handle, level uint32, form *FORM_INFO_1) (err error) = winspool.AddFormW
 //sys	DeleteForm(h syscall.Handle, pFormName *uint16) (err error) = winspool.DeleteFormW
 //sys	EnumForms(h syscall.Handle, level uint32, pForm *byte, cbBuf uint32, pcbNeeded *uint32, pcReturned *uint32) (err error) = winspool.EnumFormsW
+//sys	DeleteJob(h syscall.Handle, jobId uint32) (err error) = winspool.SetJobW
 
 //goland:noinspection GoSnakeCaseUsage,SpellCheckingInspection
 type DOC_INFO_1 struct {
@@ -526,6 +527,11 @@ func (p *Printer) Jobs() ([]JobInfo, error) {
 		pjs = append(pjs, pji)
 	}
 	return pjs, nil
+}
+
+// DeleteJob deletes a printer job
+func (p *Printer) DeleteJob(jobId uint32) error {
+	return DeleteJob(p.h, jobId)
 }
 
 // DriverInfo returns information about printer p driver.
