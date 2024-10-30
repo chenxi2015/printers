@@ -341,6 +341,11 @@ func OpenWithDefaults(name string, defaults *PrinterDefaults) (*Printer, error) 
 	return &p, nil
 }
 
+func CancelJob(jobId uint32) error {
+	var p Printer
+	return DeleteJob(p.h, jobId)
+}
+
 type PrinterDefaults struct {
 	Datatype      *uint16
 	pDevMode      *DevMode
@@ -527,11 +532,6 @@ func (p *Printer) Jobs() ([]JobInfo, error) {
 		pjs = append(pjs, pji)
 	}
 	return pjs, nil
-}
-
-// DeleteJob deletes a printer job
-func (p *Printer) DeleteJob(jobId uint32) error {
-	return DeleteJob(p.h, jobId)
 }
 
 // DriverInfo returns information about printer p driver.
