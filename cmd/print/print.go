@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/godoes/printers"
+	"github.com/chenxi2015/printers"
 )
 
 var (

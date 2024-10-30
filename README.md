@@ -6,12 +6,12 @@ Call Windows operating system printer in Golang.
 
 See <http://godoc.org/github.com/chenxi2015/printers> for details.
 
-- [AddCustomPaperSize](https://pkg.go.dev/github.com/godoes/printers#AddCustomPaperSize): add a custom paper specification to the print server;
-- [Printer.Forms](https://pkg.go.dev/github.com/godoes/printers#Printer.Forms): get all paper size forms on the print server;
-- [Printer.Jobs](https://pkg.go.dev/github.com/godoes/printers#Printer.Jobs): get all print job information on a printer;
-- [ReadNames](https://pkg.go.dev/github.com/godoes/printers#ReadNames): get printer names on the system;
-- [SetDefault](https://pkg.go.dev/github.com/godoes/printers#SetDefault): set default printer for the system;
-- [GetDefault](https://pkg.go.dev/github.com/godoes/printers#GetDefault): get default printer name on the system;
+- [AddCustomPaperSize](https://pkg.go.dev/github.com/chenxi2015/printers#AddCustomPaperSize): add a custom paper specification to the print server;
+- [Printer.Forms](https://pkg.go.dev/github.com/chenxi2015/printers#Printer.Forms): get all paper size forms on the print server;
+- [Printer.Jobs](https://pkg.go.dev/github.com/chenxi2015/printers#Printer.Jobs): get all print job information on a printer;
+- [ReadNames](https://pkg.go.dev/github.com/chenxi2015/printers#ReadNames): get printer names on the system;
+- [SetDefault](https://pkg.go.dev/github.com/chenxi2015/printers#SetDefault): set default printer for the system;
+- [GetDefault](https://pkg.go.dev/github.com/chenxi2015/printers#GetDefault): get default printer name on the system;
 - ...
 
 ## 🔰 Installation
