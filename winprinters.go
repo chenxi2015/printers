@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package printers Windows printing.
+// Package windows printers Windows printing.
 package winprinters
 
 import (
@@ -14,7 +14,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-//go:generate go run cmd/mksyscall/mksyscall_windows.go -output zapi.go printers.go
+//go:generate go run cmd/mksyscall/mksyscall_windows.go -output zapi.go winprinters.go
 
 //sys	GetDefaultPrinter(buf *uint16, bufN *uint32) (err error) = winspool.GetDefaultPrinterW
 //sys	SetDefaultPrinter(name *uint16) (err error) = winspool.SetDefaultPrinterW

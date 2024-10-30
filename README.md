@@ -42,10 +42,10 @@ func main() {
         log.Fatalln("Open error:", err)
     }
     defer func() {
-        _ = printer.Close()
+        _ = winprinters.Close()
     }()
 
-    jobs, err := printer.Jobs()
+    jobs, err := winprinters.Jobs()
     if err != nil {
         log.Fatalln("Jobs error:", err)
     }

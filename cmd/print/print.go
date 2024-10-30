@@ -25,7 +25,7 @@ var (
 )
 
 func findDefaultPrinter() string {
-	p, err := printers.GetDefault()
+	p, err := winprinters.GetDefault()
 	if err != nil {
 		return ""
 	}
@@ -33,11 +33,11 @@ func findDefaultPrinter() string {
 }
 
 func listPrinters() error {
-	printerNames, err := printers.ReadNames()
+	printerNames, err := winprinters.ReadNames()
 	if err != nil {
 		return err
 	}
-	defaultPrinter, err := printers.GetDefault()
+	defaultPrinter, err := winprinters.GetDefault()
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func selectPrinter() (string, error) {
 		// must be a printer name
 		return *printerId, nil
 	}
-	printerNames, err := printers.ReadNames()
+	printerNames, err := winprinters.ReadNames()
 	if err != nil {
 		return "", err
 	}
@@ -71,11 +71,11 @@ func selectPrinter() (string, error) {
 }
 
 func printOneDocument(printerName, documentName string, lines []string) error {
-	p, err := printers.Open(printerName)
+	p, err := winprinters.Open(printerName)
 	if err != nil {
 		return err
 	}
-	defer func(p *printers.Printer) {
+	defer func(p *winprinters.Printer) {
 		_ = p.Close()
 	}(p)
 
@@ -83,7 +83,7 @@ func printOneDocument(printerName, documentName string, lines []string) error {
 	if err != nil {
 		return err
 	}
-	defer func(p *printers.Printer) {
+	defer func(p *winprinters.Printer) {
 		_ = p.EndDocument()
 	}(p)
 
