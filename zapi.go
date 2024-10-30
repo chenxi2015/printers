@@ -30,6 +30,7 @@ var (
 	procAddFormW            = winspoolMod.NewProc("AddFormW")
 	procDeleteFormW         = winspoolMod.NewProc("DeleteFormW")
 	procEnumFormsW          = winspoolMod.NewProc("EnumFormsW")
+	procSetJobW             = winspoolMod.NewProc("SetJobW") // SetJobW可以用于控制打印任务,包括删除、暂停、恢复等操作
 )
 
 func GetDefaultPrinter(buf *uint16, bufN *uint32) (err error) {
@@ -238,6 +239,26 @@ func DeleteForm(h syscall.Handle, pFormName *uint16) (err error) {
 
 func EnumForms(h syscall.Handle, level uint32, pForm *byte, cbBuf uint32, pcbNeeded *uint32, pcReturned *uint32) (err error) {
 	r1, _, e1 := syscall.SyscallN(procEnumFormsW.Addr(), uintptr(h), uintptr(level), uintptr(unsafe.Pointer(pForm)), uintptr(cbBuf), uintptr(unsafe.Pointer(pcbNeeded)), uintptr(unsafe.Pointer(pcReturned)))
+	if r1 == 0 {
+		if e1 != 0 {
+			err = error(e1)
+		} else {
+			err = syscall.EINVAL
+		}
+	}
+	return
+}
+
+// DeleteJob 使用SetJobW接口删除打印队列中的打印任务
+// SetJobW接口可以通过不同的Command参数实现对打印任务的控制,包括:
+// - JOB_CONTROL_PAUSE (1) 暂停打印任务
+// - JOB_CONTROL_RESUME (2) 恢复打印任务
+// - JOB_CONTROL_CANCEL (3) 取消打印任务
+// - JOB_CONTROL_RESTART (4) 重新开始打印任务
+// - JOB_CONTROL_DELETE (5) 删除打印任务
+func DeleteJob(h syscall.Handle, jobId uint32) (err error) {
+	const JOB_CONTROL_DELETE = 5
+	r1, _, e1 := syscall.SyscallN(procSetJobW.Addr(), uintptr(h), uintptr(jobId), 0, 0, uintptr(JOB_CONTROL_DELETE))
 	if r1 == 0 {
 		if e1 != 0 {
 			err = error(e1)
